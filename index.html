@@ -1,0 +1,1730 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Furos</title>
+
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="Calculadora profissional de furos para prateleiras de marcenaria">
+    <meta name="theme-color" content="#4CAF50">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Calc Furos">
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+            max-width: 600px;
+            margin: 0 auto;
+            -webkit-user-select: none; /* Previne seleção acidental no iOS */
+            user-select: none;
+        }
+        
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        
+        .field {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: bold;
+        }
+        
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            -webkit-user-select: text; /* Permite seleção nos inputs */
+            user-select: text;
+        }
+        
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+        }
+        
+        .checkbox-field {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .vaos-container {
+            border: 2px dashed #ddd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        
+        .vao-item {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        
+        .vao-item input {
+            flex: 1;
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .btn-primary {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #2196F3;
+            color: white;
+        }
+        
+        .btn-danger {
+            background: #f44336;
+            color: white;
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+
+        .btn-template {
+            background: #9C27B0;
+            color: white;
+            padding: 8px 14px;
+            font-size: 13px;
+            flex: 1;
+            min-width: 110px;
+        }
+
+        .btn-template:hover {
+            background: #7B1FA2;
+        }
+
+        .templates-container {
+            margin-bottom: 15px;
+            padding: 15px;
+            background: #f3e5f5;
+            border-radius: 5px;
+            border: 2px solid #9C27B0;
+        }
+
+        .validacao-alerta {
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            border-left: 5px solid;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .validacao-erro {
+            background: #ffebee;
+            border-left-color: #f44336;
+            color: #c62828;
+        }
+
+        .validacao-aviso {
+            background: #fff3e0;
+            border-left-color: #ff9800;
+            color: #e65100;
+        }
+
+        .validacao-ok {
+            background: #e8f5e9;
+            border-left-color: #4CAF50;
+            color: #2e7d32;
+        }
+
+        .input-invalido {
+            border-color: #f44336 !important;
+            background: #ffebee !important;
+        }
+
+        .input-aviso {
+            border-color: #ff9800 !important;
+            background: #fff3e0 !important;
+        }
+        
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e8f5e9;
+            border-radius: 5px;
+        }
+        
+        .results h2 {
+            color: #2e7d32;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+        
+        .measurement {
+            padding: 10px;
+            margin-bottom: 8px;
+            background: white;
+            border-left: 4px solid #4CAF50;
+            border-radius: 3px;
+        }
+        
+        .measurement strong {
+            color: #2e7d32;
+        }
+        
+        .visual {
+            margin-top: 20px;
+            padding: 20px;
+            background: #fff3e0;
+            border-radius: 5px;
+        }
+
+        .visual h3 {
+            color: #e65100;
+            margin-bottom: 15px;
+        }
+
+        .visual-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .zoom-btn {
+            padding: 8px 16px;
+            background: #FF9800;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .zoom-btn:hover {
+            background: #F57C00;
+        }
+
+        .zoom-level {
+            padding: 8px 16px;
+            background: white;
+            border-radius: 5px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+        }
+
+        .visualizacao-wrapper {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            justify-content: center;
+            overflow-x: auto;
+            padding: 10px 100px 10px 10px; /* Espaço para medidas à direita */
+        }
+
+        .regua {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            padding-right: 10px;
+            font-size: 11px;
+            color: #666;
+            font-family: 'Courier New', monospace;
+        }
+
+        .regua-marca {
+            position: relative;
+            height: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        .regua-linha {
+            width: 15px;
+            height: 1px;
+            background: #666;
+            margin-left: 5px;
+        }
+
+        .legenda {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            border: 2px solid #e65100;
+            min-width: 180px;
+        }
+
+        .legenda h4 {
+            color: #e65100;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .legenda-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        .legenda-cor {
+            width: 20px;
+            height: 15px;
+            border: 1px solid #333;
+            border-radius: 3px;
+        }
+
+        .visual-3d {
+            margin-top: 20px;
+            padding: 20px;
+            background: #e3f2fd;
+            border-radius: 5px;
+            border: 2px solid #2196F3;
+        }
+
+        .visual-3d h3 {
+            color: #1976D2;
+            margin-bottom: 15px;
+        }
+
+        #canvas3d {
+            width: 100%;
+            height: 500px;
+            border-radius: 5px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: grab;
+        }
+
+        #canvas3d:active {
+            cursor: grabbing;
+        }
+
+        .toggle-3d {
+            background: #2196F3;
+            color: white;
+            margin-top: 10px;
+        }
+
+        .toggle-3d:hover {
+            background: #1976D2;
+        }
+
+        .instrucoes-3d {
+            margin-top: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .instrucoes-3d strong {
+            color: #1976D2;
+        }
+        
+        .armario {
+            position: relative;
+            border: 4px solid #1a1a1a;
+            background: linear-gradient(90deg, #f5f5dc 0%, #e8e8d0 100%);
+            margin: 20px auto;
+            width: 250px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .prateleira {
+            position: absolute;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(180deg, #6d4c41 0%, #5d4037 100%);
+            left: 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .parafuso {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: radial-gradient(circle at 30% 30%, #ff6b35, #d32f2f);
+            border-radius: 50%;
+            left: 25px;
+            transform: translateY(-50%);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+            border: 1px solid #b71c1c;
+        }
+
+        .parafuso.right {
+            left: auto;
+            right: 25px;
+        }
+
+        .medida-label {
+            position: absolute;
+            right: -90px;
+            font-size: 11px;
+            color: #1a1a1a;
+            font-weight: bold;
+            white-space: nowrap;
+            background: rgba(255,255,255,0.9);
+            padding: 2px 6px;
+            border-radius: 3px;
+            border: 1px solid #ddd;
+        }
+
+        .rodape {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: linear-gradient(180deg, #3e2723 0%, #2c1810 100%);
+            left: 0;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .base {
+            position: absolute;
+            width: 100%;
+            background: linear-gradient(180deg, #8d6e63 0%, #6d4c41 100%);
+            left: 0;
+            box-shadow: 0 -2px 4px rgba(0,0,0,0.2);
+        }
+
+        /* Estilos para Impressão - Layout A4 Otimizado */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+                margin: 0;
+            }
+
+            .container {
+                max-width: 100%;
+                box-shadow: none;
+                padding: 20mm;
+                page-break-after: avoid;
+            }
+
+            /* Ocultar controles na impressão */
+            .field,
+            .checkbox-field,
+            .vaos-container,
+            .templates-container,
+            .btn,
+            button {
+                display: none !important;
+            }
+
+            h1 {
+                color: #333;
+                font-size: 24pt;
+                margin-bottom: 10mm;
+                text-align: center;
+                border-bottom: 3pt solid #4CAF50;
+                padding-bottom: 5mm;
+            }
+
+            .results {
+                background: white !important;
+                border: 2pt solid #4CAF50;
+                padding: 10mm;
+                margin-bottom: 10mm;
+                page-break-inside: avoid;
+            }
+
+            .results h2 {
+                color: #2e7d32;
+                font-size: 18pt;
+                margin-bottom: 8mm;
+                border-bottom: 2pt solid #2e7d32;
+                padding-bottom: 3mm;
+            }
+
+            .measurement {
+                background: white !important;
+                border-left: 4pt solid #4CAF50;
+                padding: 5mm;
+                margin-bottom: 4mm;
+                page-break-inside: avoid;
+            }
+
+            .measurement strong {
+                font-size: 14pt;
+                color: #2e7d32;
+            }
+
+            .measurement small {
+                font-size: 10pt;
+                color: #666;
+            }
+
+            .visual {
+                background: white !important;
+                border: 2pt solid #e65100;
+                padding: 10mm;
+                page-break-inside: avoid;
+            }
+
+            .visual h3 {
+                color: #e65100;
+                font-size: 16pt;
+                margin-bottom: 8mm;
+                border-bottom: 2pt solid #e65100;
+                padding-bottom: 3mm;
+            }
+
+            .armario {
+                border: 3pt solid #333;
+                margin: 10mm auto;
+            }
+
+            /* Rodapé de impressão com data/hora */
+            .print-footer {
+                display: block !important;
+                position: fixed;
+                bottom: 10mm;
+                left: 0;
+                right: 0;
+                text-align: center;
+                font-size: 9pt;
+                color: #666;
+                padding-top: 3mm;
+                border-top: 1pt solid #ddd;
+            }
+        }
+
+        .print-footer {
+            display: none;
+        }
+
+        /* ========== RESPONSIVIDADE MOBILE ========== */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .container {
+                padding: 15px;
+                border-radius: 10px;
+            }
+
+            h1 {
+                font-size: 20px;
+                margin-bottom: 15px;
+            }
+
+            /* Botões maiores para touch */
+            .btn {
+                padding: 14px 18px;
+                font-size: 15px;
+                margin-right: 5px;
+                margin-bottom: 8px;
+                min-height: 48px; /* Recomendação touch */
+            }
+
+            /* Templates em coluna */
+            .templates-container > div {
+                flex-direction: column;
+            }
+
+            .btn-template {
+                width: 100%;
+                margin-bottom: 8px;
+                min-width: auto;
+            }
+
+            /* Inputs maiores */
+            input[type="number"] {
+                font-size: 16px; /* Evita zoom iOS */
+                padding: 12px;
+            }
+
+            label {
+                font-size: 14px;
+                margin-bottom: 8px;
+            }
+
+            /* Vãos responsivos */
+            .vao-item {
+                flex-direction: column;
+                gap: 5px;
+            }
+
+            .vao-item input {
+                width: 100%;
+            }
+
+            .vao-item .btn-danger {
+                width: 100%;
+            }
+
+            /* Validações */
+            .validacao-alerta {
+                padding: 10px 12px;
+                font-size: 13px;
+            }
+
+            /* Resultados */
+            .measurement {
+                padding: 8px;
+                font-size: 13px;
+            }
+
+            .measurement strong {
+                font-size: 14px;
+            }
+
+            .measurement small {
+                font-size: 11px;
+            }
+
+            /* Visualização ajustada */
+            .visualizacao-wrapper {
+                flex-direction: column;
+                padding: 10px;
+                align-items: center;
+            }
+
+            .regua {
+                display: none; /* Oculta régua no mobile */
+            }
+
+            .armario {
+                width: 200px !important; /* Menor no mobile */
+            }
+
+            .medida-label {
+                right: -70px; /* Menos espaço */
+                font-size: 10px;
+                padding: 1px 4px;
+            }
+
+            .legenda {
+                width: 100%;
+                margin-top: 15px;
+                min-width: auto;
+            }
+
+            .legenda-item {
+                font-size: 11px;
+            }
+
+            /* Controles de zoom */
+            .visual-controls {
+                flex-wrap: wrap;
+            }
+
+            .zoom-btn {
+                font-size: 16px;
+                padding: 10px 18px;
+            }
+
+            .zoom-level {
+                padding: 10px 14px;
+                font-size: 14px;
+            }
+
+            /* Canvas 3D mobile */
+            #canvas3d {
+                height: 350px;
+            }
+
+            .instrucoes-3d {
+                font-size: 11px;
+                padding: 8px;
+            }
+
+            /* Visual */
+            .visual, .visual-3d {
+                padding: 15px;
+            }
+
+            .visual h3, .visual-3d h3 {
+                font-size: 16px;
+                margin-bottom: 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            /* Celulares muito pequenos */
+            .container {
+                padding: 10px;
+            }
+
+            h1 {
+                font-size: 18px;
+            }
+
+            .btn {
+                padding: 12px 14px;
+                font-size: 14px;
+            }
+
+            .field {
+                margin-bottom: 12px;
+            }
+
+            /* Armário ainda menor */
+            .armario {
+                width: 180px !important;
+            }
+
+            .medida-label {
+                right: -60px;
+                font-size: 9px;
+            }
+
+            /* Canvas 3D menor */
+            #canvas3d {
+                height: 300px;
+            }
+        }
+
+        /* Landscape mobile */
+        @media (max-width: 768px) and (orientation: landscape) {
+            #canvas3d {
+                height: 280px;
+            }
+
+            .armario {
+                width: 150px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📐 Calculadora de Furos para Prateleiras</h1>
+        
+        <div class="field">
+            <label>Altura Lateral do Armário (mm):</label>
+            <input type="number" id="lateral" value="2000" min="100">
+        </div>
+        
+        <div class="field">
+            <label>Espessura da Prateleira (mm):</label>
+            <input type="number" id="espessura" value="18" min="1">
+        </div>
+
+        <div class="templates-container">
+            <label style="margin-bottom: 10px; display: block;">⚡ Templates Rápidos:</label>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button class="btn btn-template" onclick="aplicarTemplate('cozinha')">🏠 Cozinha</button>
+                <button class="btn btn-template" onclick="aplicarTemplate('estante')">📚 Estante</button>
+                <button class="btn btn-template" onclick="aplicarTemplate('escritorio')">💼 Escritório</button>
+                <button class="btn btn-template" onclick="aplicarTemplate('guarda-roupa')">👔 Guarda-roupa</button>
+            </div>
+        </div>
+
+        <div class="checkbox-field">
+            <input type="checkbox" id="temRodape" checked>
+            <label for="temRodape">Tem Rodapé?</label>
+        </div>
+        
+        <div class="field" id="rodapeField">
+            <label>Altura do Rodapé (mm):</label>
+            <input type="number" id="rodape" value="70" min="0">
+        </div>
+        
+        <div class="vaos-container">
+            <label>Alturas dos Vãos (mm):</label>
+            <div id="vaosContainer">
+                <div class="vao-item">
+                    <input type="number" class="vao-input" value="300" min="1" placeholder="Vão 1">
+                    <button class="btn btn-danger" onclick="removeVao(this)">✕</button>
+                </div>
+                <div class="vao-item">
+                    <input type="number" class="vao-input" value="400" min="1" placeholder="Vão 2">
+                    <button class="btn btn-danger" onclick="removeVao(this)">✕</button>
+                </div>
+                <div class="vao-item">
+                    <input type="number" class="vao-input" value="400" min="1" placeholder="Vão 3">
+                    <button class="btn btn-danger" onclick="removeVao(this)">✕</button>
+                </div>
+                <div class="vao-item">
+                    <input type="number" class="vao-input" value="270" min="1" placeholder="Vão 4">
+                    <button class="btn btn-danger" onclick="removeVao(this)">✕</button>
+                </div>
+            </div>
+            <button class="btn btn-secondary" onclick="addVao()">+ Adicionar Vão</button>
+            <button class="btn btn-secondary" onclick="calcularAutomatico()">⚡ Calcular Automático</button>
+        </div>
+        
+        <div id="validacoes"></div>
+
+        <button class="btn btn-primary" onclick="calcular()">Calcular Posições dos Furos</button>
+        <button class="btn btn-secondary" onclick="imprimirPDF()" id="printBtn" style="display: none;">🖨️ Imprimir/PDF</button>
+        <button class="btn btn-secondary" onclick="gerarPDF()" id="pdfBtn" style="display: none;">📄 Download PDF</button>
+        <button class="btn btn-secondary" onclick="copiarMedidas()" id="copyBtn" style="display: none;">📋 Copiar Medidas</button>
+        <button class="btn toggle-3d" onclick="abrir3D()" id="btn3D" style="display: none;">🎮 Ver em 3D</button>
+
+        <div id="results"></div>
+        <div id="visual"></div>
+
+        <div class="visual-3d" id="visual3d" style="display: none;">
+            <h3>🎮 Visualização 3D Interativa</h3>
+            <div id="canvas3d"></div>
+            <div class="instrucoes-3d">
+                <strong>Controles:</strong>
+                • Arraste para rotacionar
+                • Scroll/Pinch para zoom
+                • Clique direito para mover
+            </div>
+            <button class="btn toggle-3d" onclick="fechar3D()">Voltar para Visualização 2D</button>
+        </div>
+
+        <div class="print-footer">
+            <p id="printDate"></p>
+        </div>
+    </div>
+    
+    <script>
+        const OFFSET_PARAFUSO = 4; // 4mm acima da base da prateleira
+        
+        // Wake Lock - Mantém a tela ligada
+        let wakeLock = null;
+        
+        async function requestWakeLock() {
+            try {
+                if ('wakeLock' in navigator) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Wake Lock ativado - tela não desligará');
+                    
+                    wakeLock.addEventListener('release', () => {
+                        console.log('Wake Lock liberado');
+                    });
+                }
+            } catch (err) {
+                console.log('Wake Lock não disponível:', err);
+            }
+        }
+        
+        // Reativa o Wake Lock quando a página fica visível novamente
+        document.addEventListener('visibilitychange', async () => {
+            if (wakeLock !== null && document.visibilityState === 'visible') {
+                await requestWakeLock();
+            }
+        });
+        
+        // Ativa o Wake Lock ao carregar a página
+        requestWakeLock();
+
+        document.getElementById('temRodape').addEventListener('change', function() {
+            document.getElementById('rodapeField').style.display = this.checked ? 'block' : 'none';
+            validarConfiguracao();
+        });
+
+        // Event listeners para validação em tempo real
+        document.getElementById('lateral').addEventListener('input', validarConfiguracao);
+        document.getElementById('espessura').addEventListener('input', validarConfiguracao);
+        document.getElementById('rodape').addEventListener('input', validarConfiguracao);
+
+        function validarConfiguracao() {
+            const lateral = parseFloat(document.getElementById('lateral').value) || 0;
+            const espessura = parseFloat(document.getElementById('espessura').value) || 0;
+            const temRodape = document.getElementById('temRodape').checked;
+            const rodape = temRodape ? (parseFloat(document.getElementById('rodape').value) || 0) : 0;
+
+            const vaosInputs = document.querySelectorAll('.vao-input');
+            const vaos = Array.from(vaosInputs).map(input => parseFloat(input.value) || 0);
+
+            const alertas = [];
+
+            // Validação 1: Altura mínima da lateral
+            if (lateral > 0 && lateral < 500) {
+                alertas.push({
+                    tipo: 'aviso',
+                    icone: '⚠️',
+                    mensagem: 'Altura da lateral muito baixa (mínimo recomendado: 500mm)'
+                });
+            }
+
+            // Validação 2: Altura máxima da lateral
+            if (lateral > 3000) {
+                alertas.push({
+                    tipo: 'aviso',
+                    icone: '⚠️',
+                    mensagem: 'Altura da lateral muito alta. Considere reforços estruturais.'
+                });
+            }
+
+            // Validação 3: Espessura
+            if (espessura > 0 && espessura < 15) {
+                alertas.push({
+                    tipo: 'aviso',
+                    icone: '⚠️',
+                    mensagem: 'Espessura muito fina. Recomendado: 15-25mm'
+                });
+            }
+
+            if (espessura > 30) {
+                alertas.push({
+                    tipo: 'aviso',
+                    icone: '⚠️',
+                    mensagem: 'Espessura acima do comum. Verifique cálculos.'
+                });
+            }
+
+            // Validação 4: Vãos muito grandes (podem vergar)
+            vaos.forEach((vao, idx) => {
+                if (vao > 800) {
+                    alertas.push({
+                        tipo: 'erro',
+                        icone: '❌',
+                        mensagem: `Vão ${idx + 1} muito grande (${vao}mm)! Risco de vergamento. Máximo recomendado: 800mm`
+                    });
+                    // Marca o input como inválido
+                    vaosInputs[idx].classList.add('input-invalido');
+                    vaosInputs[idx].classList.remove('input-aviso');
+                } else if (vao > 650) {
+                    alertas.push({
+                        tipo: 'aviso',
+                        icone: '⚠️',
+                        mensagem: `Vão ${idx + 1} grande (${vao}mm). Considere usar espessura maior ou reforço.`
+                    });
+                    vaosInputs[idx].classList.add('input-aviso');
+                    vaosInputs[idx].classList.remove('input-invalido');
+                } else {
+                    vaosInputs[idx].classList.remove('input-invalido', 'input-aviso');
+                }
+            });
+
+            // Validação 5: Soma dos vãos vs altura disponível
+            const somaVaos = vaos.reduce((sum, v) => sum + v, 0);
+            const numPrateleiras = vaos.length + 1; // +1 para base e topo
+            const alturaOcupadaPrateleiras = numPrateleiras * espessura;
+            const alturaTotal = somaVaos + alturaOcupadaPrateleiras + rodape;
+
+            if (lateral > 0 && alturaTotal > lateral) {
+                const excesso = alturaTotal - lateral;
+                alertas.push({
+                    tipo: 'erro',
+                    icone: '❌',
+                    mensagem: `Configuração inválida! Altura total (${Math.round(alturaTotal)}mm) excede a lateral (${lateral}mm) em ${Math.round(excesso)}mm`
+                });
+            } else if (lateral > 0 && alturaTotal > 0) {
+                const sobra = lateral - alturaTotal;
+                if (sobra > 100) {
+                    alertas.push({
+                        tipo: 'aviso',
+                        icone: 'ℹ️',
+                        mensagem: `Sobram ${Math.round(sobra)}mm. Use "Calcular Automático" para aproveitar melhor o espaço.`
+                    });
+                }
+            }
+
+            // Validação 6: Rodapé muito alto
+            if (rodape > lateral * 0.15) {
+                alertas.push({
+                    tipo: 'aviso',
+                    icone: '⚠️',
+                    mensagem: `Rodapé alto (${rodape}mm). Verifique se está correto.`
+                });
+            }
+
+            // Validação 7: Configuração OK
+            if (alertas.length === 0 && lateral > 0 && vaos.length > 0) {
+                alertas.push({
+                    tipo: 'ok',
+                    icone: '✅',
+                    mensagem: 'Configuração válida! Pronto para calcular.'
+                });
+            }
+
+            // Renderizar alertas
+            const container = document.getElementById('validacoes');
+            if (alertas.length === 0) {
+                container.innerHTML = '';
+            } else {
+                container.innerHTML = alertas.map(alerta => `
+                    <div class="validacao-alerta validacao-${alerta.tipo}">
+                        <span style="font-size: 20px;">${alerta.icone}</span>
+                        <span>${alerta.mensagem}</span>
+                    </div>
+                `).join('');
+            }
+        }
+        
+        // Delegação de eventos para inputs de vão (dinâmicos)
+        document.getElementById('vaosContainer').addEventListener('input', function(e) {
+            if (e.target.classList.contains('vao-input')) {
+                validarConfiguracao();
+            }
+        });
+
+        function addVao() {
+            const container = document.getElementById('vaosContainer');
+            const count = container.children.length + 1;
+            const div = document.createElement('div');
+            div.className = 'vao-item';
+            div.innerHTML = `
+                <input type="number" class="vao-input" value="300" min="1" placeholder="Vão ${count}">
+                <button class="btn btn-danger" onclick="removeVao(this)">✕</button>
+            `;
+            container.appendChild(div);
+            validarConfiguracao();
+        }
+        
+        function removeVao(btn) {
+            const container = document.getElementById('vaosContainer');
+            if (container.children.length > 1) {
+                btn.parentElement.remove();
+                validarConfiguracao();
+            } else {
+                alert('Deve haver pelo menos um vão!');
+            }
+        }
+
+        function aplicarTemplate(tipo) {
+            const templates = {
+                'cozinha': {
+                    lateral: 2100,
+                    espessura: 18,
+                    temRodape: true,
+                    rodape: 100,
+                    vaos: [380, 400, 400, 350, 350]
+                },
+                'estante': {
+                    lateral: 1800,
+                    espessura: 25,
+                    temRodape: false,
+                    rodape: 0,
+                    vaos: [300, 300, 300, 300, 300, 300]
+                },
+                'escritorio': {
+                    lateral: 2000,
+                    espessura: 18,
+                    temRodape: true,
+                    rodape: 70,
+                    vaos: [450, 350, 350, 350, 300]
+                },
+                'guarda-roupa': {
+                    lateral: 2400,
+                    espessura: 18,
+                    temRodape: true,
+                    rodape: 120,
+                    vaos: [600, 400, 400, 400, 300]
+                }
+            };
+
+            const template = templates[tipo];
+            if (!template) return;
+
+            // Aplica configurações básicas
+            document.getElementById('lateral').value = template.lateral;
+            document.getElementById('espessura').value = template.espessura;
+            document.getElementById('temRodape').checked = template.temRodape;
+            document.getElementById('rodape').value = template.rodape;
+            document.getElementById('rodapeField').style.display = template.temRodape ? 'block' : 'none';
+
+            // Limpa vãos existentes
+            const container = document.getElementById('vaosContainer');
+            container.innerHTML = '';
+
+            // Adiciona vãos do template
+            template.vaos.forEach((vao, idx) => {
+                const div = document.createElement('div');
+                div.className = 'vao-item';
+                div.innerHTML = `
+                    <input type="number" class="vao-input" value="${vao}" min="1" placeholder="Vão ${idx + 1}">
+                    <button class="btn btn-danger" onclick="removeVao(this)">✕</button>
+                `;
+                container.appendChild(div);
+            });
+
+            // Recalcula automaticamente
+            calcular();
+        }
+        
+        function calcularAutomatico() {
+            const lateral = parseFloat(document.getElementById('lateral').value);
+            const espessura = parseFloat(document.getElementById('espessura').value);
+            const temRodape = document.getElementById('temRodape').checked;
+            const rodape = temRodape ? parseFloat(document.getElementById('rodape').value) : 0;
+            
+            const container = document.getElementById('vaosContainer');
+            const numVaos = container.children.length;
+            
+            // Altura disponível: lateral - rodapé - base (18mm) - topo (18mm)
+            const alturaDisponivel = lateral - rodape - (2 * espessura);
+            
+            // Altura ocupada pelas prateleiras
+            const alturaPreteleiras = (numVaos - 1) * espessura;
+            
+            // Altura disponível para os vãos
+            const alturaVaos = alturaDisponivel - alturaPreteleiras;
+            
+            // Divide igualmente
+            const vaoAutomatico = Math.floor(alturaVaos / numVaos);
+            
+            const inputs = container.querySelectorAll('.vao-input');
+            inputs.forEach(input => {
+                input.value = vaoAutomatico;
+            });
+        }
+        
+        function calcular() {
+            const espessura = parseFloat(document.getElementById('espessura').value);
+            const temRodape = document.getElementById('temRodape').checked;
+            const rodape = temRodape ? parseFloat(document.getElementById('rodape').value) : 0;
+            const lateral = parseFloat(document.getElementById('lateral').value);
+            
+            const vaosInputs = document.querySelectorAll('.vao-input');
+            const vaos = Array.from(vaosInputs).map(input => parseFloat(input.value));
+            
+            if (vaos.some(v => isNaN(v) || v <= 0)) {
+                alert('Por favor, preencha todos os vãos com valores válidos!');
+                return;
+            }
+            
+            const posicoes = [];
+            let acumulado = rodape + espessura; // base (com ou sem rodapé)
+            
+            // Calcula posições para todas as prateleiras
+            for (let i = 0; i < vaos.length; i++) {
+                acumulado += vaos[i] + OFFSET_PARAFUSO;
+                posicoes.push({
+                    prateleira: i + 1,
+                    posicao: acumulado,
+                    calculo: i === 0 
+                        ? `${rodape}mm + ${espessura}mm + ${vaos[i]}mm + ${OFFSET_PARAFUSO}mm`
+                        : `${posicoes[i-1].posicao}mm + ${espessura - OFFSET_PARAFUSO}mm + ${vaos[i]}mm + ${OFFSET_PARAFUSO}mm`
+                });
+                
+                if (i < vaos.length - 1) {
+                    acumulado += (espessura - OFFSET_PARAFUSO);
+                }
+            }
+            
+            // Renderizar resultados
+            let html = '<div class="results"><h2>📍 Posições dos Furos</h2>';
+            posicoes.forEach(p => {
+                html += `
+                    <div class="measurement">
+                        <strong>Prateleira ${p.prateleira}:</strong> ${p.posicao}mm<br>
+                        <small style="color: #666;">${p.calculo} = ${p.posicao}mm</small>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            
+            document.getElementById('results').innerHTML = html;
+            
+            // Mostrar botões de impressão, PDF, Copiar e 3D
+            document.getElementById('printBtn').style.display = 'inline-block';
+            document.getElementById('pdfBtn').style.display = 'inline-block';
+            document.getElementById('copyBtn').style.display = 'inline-block';
+            document.getElementById('btn3D').style.display = 'inline-block';
+
+            // Atualizar data para impressão
+            atualizarDataImpressao();
+
+            // Preparar dados para visualização 3D
+            window.dados3D = {lateral, rodape, espessura, vaos, posicoes, temRodape};
+            
+            // Renderizar visualização
+            renderVisualizacao(lateral, rodape, espessura, vaos, posicoes, temRodape);
+        }
+        
+        let zoomAtual = 1;
+
+        function ajustarZoom(delta) {
+            zoomAtual += delta;
+            if (zoomAtual < 0.5) zoomAtual = 0.5;
+            if (zoomAtual > 2) zoomAtual = 2;
+
+            // Atualiza a visualização
+            const armario = document.querySelector('.armario');
+            if (armario) {
+                armario.style.transform = `scale(${zoomAtual})`;
+            }
+
+            // Atualiza o display
+            const zoomDisplay = document.getElementById('zoomLevel');
+            if (zoomDisplay) {
+                zoomDisplay.textContent = `${Math.round(zoomAtual * 100)}%`;
+            }
+        }
+
+        function renderVisualizacao(lateral, rodape, espessura, vaos, posicoes, temRodape) {
+            const escala = 250 / lateral; // Escala para caber na tela
+            const alturaDiv = lateral * escala;
+            const rodapeVisual = temRodape ? rodape * escala : 0;
+            const espessuraVisual = espessura * escala;
+
+            let html = '<div class="visual"><h3>📦 Visualização do Armário</h3>';
+
+            // Controles de zoom
+            html += `
+                <div class="visual-controls">
+                    <button class="zoom-btn" onclick="ajustarZoom(-0.25)">−</button>
+                    <div class="zoom-level">
+                        Zoom: <span id="zoomLevel" style="margin-left: 5px;">${Math.round(zoomAtual * 100)}%</span>
+                    </div>
+                    <button class="zoom-btn" onclick="ajustarZoom(0.25)">+</button>
+                </div>
+            `;
+
+            html += '<div class="visualizacao-wrapper">';
+
+            // Régua lateral
+            html += '<div class="regua">';
+            const intervaloRegua = 200; // Marcas a cada 200mm
+            for (let i = 0; i <= lateral; i += intervaloRegua) {
+                const posRegua = (lateral - i) * escala;
+                html += `
+                    <div class="regua-marca" style="position: absolute; top: ${posRegua}px;">
+                        <span>${i}mm</span>
+                        <div class="regua-linha"></div>
+                    </div>
+                `;
+            }
+            html += '</div>';
+
+            // Armário
+            html += `<div class="armario" style="height: ${alturaDiv}px; transform: scale(${zoomAtual});">`;
+
+            // Base (com ou sem rodapé embaixo)
+            if (temRodape) {
+                html += `<div class="rodape" style="height: ${rodapeVisual}px;"></div>`;
+                html += `<div class="base" style="bottom: ${rodapeVisual}px; height: ${espessuraVisual}px;"></div>`;
+            } else {
+                html += `<div class="base" style="bottom: 0; height: ${espessuraVisual}px;"></div>`;
+            }
+
+            // Prateleiras intermediárias com parafusos
+            posicoes.forEach(p => {
+                const pos = (lateral - p.posicao) * escala;
+                html += `<div class="prateleira" style="top: ${pos}px; height: ${espessuraVisual}px;"></div>`;
+                html += `<div class="parafuso" style="top: ${pos}px;"></div>`;
+                html += `<div class="parafuso right" style="top: ${pos}px;"></div>`;
+                html += `<div class="medida-label" style="top: ${pos}px; transform: translateY(-50%);">${p.posicao}mm</div>`;
+            });
+
+            html += '</div>'; // fecha armario
+
+            // Legenda
+            html += `
+                <div class="legenda">
+                    <h4>🎨 Legenda</h4>
+                    <div class="legenda-item">
+                        <div class="legenda-cor" style="background: linear-gradient(180deg, #3e2723 0%, #2c1810 100%);"></div>
+                        <span>Rodapé</span>
+                    </div>
+                    <div class="legenda-item">
+                        <div class="legenda-cor" style="background: linear-gradient(180deg, #8d6e63 0%, #6d4c41 100%);"></div>
+                        <span>Base/Topo</span>
+                    </div>
+                    <div class="legenda-item">
+                        <div class="legenda-cor" style="background: linear-gradient(180deg, #6d4c41 0%, #5d4037 100%);"></div>
+                        <span>Prateleira</span>
+                    </div>
+                    <div class="legenda-item">
+                        <div class="legenda-cor" style="background: radial-gradient(circle at 30% 30%, #ff6b35, #d32f2f); border-radius: 50%;"></div>
+                        <span>Parafuso</span>
+                    </div>
+                    <div class="legenda-item">
+                        <div class="legenda-cor" style="background: linear-gradient(90deg, #f5f5dc 0%, #e8e8d0 100%);"></div>
+                        <span>Lateral</span>
+                    </div>
+                </div>
+            `;
+
+            html += '</div>'; // fecha visualizacao-wrapper
+            html += '</div>'; // fecha visual
+
+            document.getElementById('visual').innerHTML = html;
+        }
+        
+        function atualizarDataImpressao() {
+            const now = new Date();
+            const dataFormatada = now.toLocaleDateString('pt-BR', {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric'
+            });
+            const horaFormatada = now.toLocaleTimeString('pt-BR', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            document.getElementById('printDate').textContent = `Gerado em ${dataFormatada} às ${horaFormatada}`;
+        }
+
+        function imprimirPDF() {
+            // Atualiza a data antes de imprimir
+            atualizarDataImpressao();
+
+            // Aguarda um momento para garantir que a data foi atualizada
+            setTimeout(() => {
+                window.print();
+            }, 100);
+        }
+
+        async function gerarPDF() {
+            const { jsPDF } = window.jspdf;
+
+            try {
+                // Captura a página inteira
+                const container = document.querySelector('.container');
+                const canvas = await html2canvas(container, {
+                    scale: 2,
+                    useCORS: true,
+                    logging: false,
+                    backgroundColor: '#ffffff'
+                });
+
+                // Cria o PDF
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+
+                const imgWidth = 210; // Largura A4 em mm
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+                pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+
+                // Gera nome do arquivo com data/hora
+                const now = new Date();
+                const fileName = `furos_prateleiras_${now.getDate()}_${now.getMonth()+1}_${now.getFullYear()}_${now.getHours()}h${now.getMinutes()}.pdf`;
+
+                pdf.save(fileName);
+            } catch (error) {
+                alert('Erro ao gerar PDF. Tente novamente.');
+                console.error(error);
+            }
+        }
+
+        async function copiarMedidas() {
+            const lateral = parseFloat(document.getElementById('lateral').value);
+            const espessura = parseFloat(document.getElementById('espessura').value);
+            const temRodape = document.getElementById('temRodape').checked;
+            const rodape = temRodape ? parseFloat(document.getElementById('rodape').value) : 0;
+
+            const vaosInputs = document.querySelectorAll('.vao-input');
+            const vaos = Array.from(vaosInputs).map(input => parseFloat(input.value));
+
+            // Coleta as medidas dos resultados
+            const medidas = document.querySelectorAll('.measurement');
+
+            let texto = `📐 FUROS PARA PRATELEIRAS\n`;
+            texto += `${'='.repeat(40)}\n\n`;
+            texto += `📏 CONFIGURAÇÕES:\n`;
+            texto += `• Altura Lateral: ${lateral}mm\n`;
+            texto += `• Espessura: ${espessura}mm\n`;
+            texto += `• Rodapé: ${temRodape ? rodape + 'mm' : 'Não'}\n`;
+            texto += `• Vãos: ${vaos.join('mm, ')}mm\n\n`;
+            texto += `📍 POSIÇÕES DOS FUROS:\n`;
+            texto += `${'-'.repeat(40)}\n`;
+
+            medidas.forEach((med, idx) => {
+                const strongText = med.querySelector('strong').textContent;
+                const medicaoMatch = strongText.match(/(\d+)mm/);
+                if (medicaoMatch) {
+                    texto += `Prateleira ${idx + 1}: ${medicaoMatch[1]}mm\n`;
+                }
+            });
+
+            texto += `\n${'='.repeat(40)}\n`;
+            const now = new Date();
+            texto += `📅 ${now.toLocaleDateString('pt-BR')} ${now.toLocaleTimeString('pt-BR', {hour: '2-digit', minute: '2-digit'})}`;
+
+            try {
+                await navigator.clipboard.writeText(texto);
+
+                // Feedback visual
+                const btn = document.getElementById('copyBtn');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '✅ Copiado!';
+                btn.style.background = '#4CAF50';
+
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.style.background = '#2196F3';
+                }, 2000);
+            } catch (error) {
+                alert('Erro ao copiar. Verifique as permissões do navegador.');
+                console.error(error);
+            }
+        }
+        
+        // ========== VISUALIZAÇÃO 3D COM THREE.JS ==========
+        let scene3D, camera3D, renderer3D, controls3D;
+
+        function abrir3D() {
+            document.getElementById('visual3d').style.display = 'block';
+            document.getElementById('visual').style.display = 'none';
+            document.getElementById('results').style.display = 'none';
+
+            // Scroll para a visualização 3D
+            document.getElementById('visual3d').scrollIntoView({ behavior: 'smooth' });
+
+            // Inicializa Three.js
+            inicializar3D();
+        }
+
+        function fechar3D() {
+            document.getElementById('visual3d').style.display = 'none';
+            document.getElementById('visual').style.display = 'block';
+            document.getElementById('results').style.display = 'block';
+
+            // Limpa a cena 3D
+            if (renderer3D) {
+                renderer3D.dispose();
+                document.getElementById('canvas3d').innerHTML = '';
+            }
+        }
+
+        function inicializar3D() {
+            const container = document.getElementById('canvas3d');
+            const width = container.clientWidth;
+            const height = 500;
+
+            // Cena
+            scene3D = new THREE.Scene();
+            scene3D.background = new THREE.Color(0x667eea);
+            scene3D.fog = new THREE.Fog(0x667eea, 500, 2000);
+
+            // Câmera
+            camera3D = new THREE.PerspectiveCamera(45, width / height, 1, 5000);
+            camera3D.position.set(800, 600, 1000);
+            camera3D.lookAt(0, 0, 0);
+
+            // Renderer
+            renderer3D = new THREE.WebGLRenderer({ antialias: true });
+            renderer3D.setSize(width, height);
+            renderer3D.shadowMap.enabled = true;
+            renderer3D.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.innerHTML = '';
+            container.appendChild(renderer3D.domElement);
+
+            // Controles de órbita
+            controls3D = new THREE.OrbitControls(camera3D, renderer3D.domElement);
+            controls3D.enableDamping = true;
+            controls3D.dampingFactor = 0.05;
+            controls3D.minDistance = 300;
+            controls3D.maxDistance = 2000;
+
+            // Luzes
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene3D.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(200, 500, 300);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.camera.left = -500;
+            directionalLight.shadow.camera.right = 500;
+            directionalLight.shadow.camera.top = 500;
+            directionalLight.shadow.camera.bottom = -500;
+            scene3D.add(directionalLight);
+
+            const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.3);
+            directionalLight2.position.set(-200, 200, -300);
+            scene3D.add(directionalLight2);
+
+            // Grid do chão
+            const gridHelper = new THREE.GridHelper(1000, 20, 0xffffff, 0xaaaaaa);
+            gridHelper.position.y = -10;
+            scene3D.add(gridHelper);
+
+            // Renderiza o armário
+            renderArmario3D();
+
+            // Loop de animação
+            animate3D();
+        }
+
+        function renderArmario3D() {
+            const { lateral, rodape, espessura, vaos, posicoes, temRodape } = window.dados3D;
+            const profundidade = 400; // Profundidade fixa do armário
+            const largura = 600; // Largura fixa
+
+            // Materiais
+            const matLateral = new THREE.MeshStandardMaterial({
+                color: 0xf5f5dc,
+                roughness: 0.7,
+                metalness: 0.1
+            });
+
+            const matRodape = new THREE.MeshStandardMaterial({
+                color: 0x3e2723,
+                roughness: 0.5,
+                metalness: 0.2
+            });
+
+            const matBase = new THREE.MeshStandardMaterial({
+                color: 0x8d6e63,
+                roughness: 0.6,
+                metalness: 0.1
+            });
+
+            const matPrateleira = new THREE.MeshStandardMaterial({
+                color: 0x6d4c41,
+                roughness: 0.6,
+                metalness: 0.1
+            });
+
+            const matParafuso = new THREE.MeshStandardMaterial({
+                color: 0xd32f2f,
+                roughness: 0.3,
+                metalness: 0.7
+            });
+
+            // Grupo do armário (centralizado)
+            const armario = new THREE.Group();
+
+            // Lateral esquerda
+            const lateralEsq = new THREE.Mesh(
+                new THREE.BoxGeometry(espessura, lateral, profundidade),
+                matLateral
+            );
+            lateralEsq.position.set(-largura / 2, lateral / 2, 0);
+            lateralEsq.castShadow = true;
+            lateralEsq.receiveShadow = true;
+            armario.add(lateralEsq);
+
+            // Lateral direita
+            const lateralDir = new THREE.Mesh(
+                new THREE.BoxGeometry(espessura, lateral, profundidade),
+                matLateral
+            );
+            lateralDir.position.set(largura / 2, lateral / 2, 0);
+            lateralDir.castShadow = true;
+            lateralDir.receiveShadow = true;
+            armario.add(lateralDir);
+
+            // Lateral traseira
+            const lateralTras = new THREE.Mesh(
+                new THREE.BoxGeometry(largura, lateral, espessura / 2),
+                matLateral
+            );
+            lateralTras.position.set(0, lateral / 2, -profundidade / 2);
+            lateralTras.castShadow = true;
+            lateralTras.receiveShadow = true;
+            armario.add(lateralTras);
+
+            // Rodapé (se existir)
+            if (temRodape && rodape > 0) {
+                const rodapeGeom = new THREE.Mesh(
+                    new THREE.BoxGeometry(largura, rodape, profundidade),
+                    matRodape
+                );
+                rodapeGeom.position.set(0, rodape / 2, 0);
+                rodapeGeom.castShadow = true;
+                rodapeGeom.receiveShadow = true;
+                armario.add(rodapeGeom);
+            }
+
+            // Base (prateleira inferior)
+            const baseY = temRodape ? rodape + espessura / 2 : espessura / 2;
+            const base = new THREE.Mesh(
+                new THREE.BoxGeometry(largura - 2 * espessura, espessura, profundidade),
+                matBase
+            );
+            base.position.set(0, baseY, 0);
+            base.castShadow = true;
+            base.receiveShadow = true;
+            armario.add(base);
+
+            // Prateleiras intermediárias
+            posicoes.forEach((p, idx) => {
+                const prateleira = new THREE.Mesh(
+                    new THREE.BoxGeometry(largura - 2 * espessura, espessura, profundidade),
+                    matPrateleira
+                );
+                prateleira.position.set(0, p.posicao, 0);
+                prateleira.castShadow = true;
+                prateleira.receiveShadow = true;
+                armario.add(prateleira);
+
+                // Parafusos (4 por prateleira - 2 de cada lado)
+                const parafusoRadius = 5;
+                const parafusoHeight = 8;
+                const offsetX = largura / 2 - 40;
+
+                // Esquerda frente
+                const parafuso1 = new THREE.Mesh(
+                    new THREE.CylinderGeometry(parafusoRadius, parafusoRadius, parafusoHeight, 16),
+                    matParafuso
+                );
+                parafuso1.position.set(-offsetX, p.posicao, profundidade / 2 - 30);
+                parafuso1.rotation.z = Math.PI / 2;
+                parafuso1.castShadow = true;
+                armario.add(parafuso1);
+
+                // Esquerda trás
+                const parafuso2 = parafuso1.clone();
+                parafuso2.position.z = -profundidade / 2 + 30;
+                armario.add(parafuso2);
+
+                // Direita frente
+                const parafuso3 = parafuso1.clone();
+                parafuso3.position.x = offsetX;
+                armario.add(parafuso3);
+
+                // Direita trás
+                const parafuso4 = parafuso1.clone();
+                parafuso4.position.set(offsetX, p.posicao, -profundidade / 2 + 30);
+                armario.add(parafuso4);
+            });
+
+            // Topo
+            const topo = new THREE.Mesh(
+                new THREE.BoxGeometry(largura - 2 * espessura, espessura, profundidade),
+                matBase
+            );
+            topo.position.set(0, lateral - espessura / 2, 0);
+            topo.castShadow = true;
+            topo.receiveShadow = true;
+            armario.add(topo);
+
+            scene3D.add(armario);
+        }
+
+        function animate3D() {
+            requestAnimationFrame(animate3D);
+            controls3D.update();
+            renderer3D.render(scene3D, camera3D);
+        }
+
+        // Responsividade do canvas 3D
+        window.addEventListener('resize', () => {
+            if (renderer3D && document.getElementById('visual3d').style.display !== 'none') {
+                const container = document.getElementById('canvas3d');
+                const width = container.clientWidth;
+                const height = 500;
+
+                camera3D.aspect = width / height;
+                camera3D.updateProjectionMatrix();
+                renderer3D.setSize(width, height);
+            }
+        });
+
+        // ========== FIM VISUALIZAÇÃO 3D ==========
+
+        // Registro do Service Worker para PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', async () => {
+                try {
+                    const registration = await navigator.serviceWorker.register('sw.js');
+                    console.log('Service Worker registrado com sucesso:', registration.scope);
+
+                    // Verifica se há atualizações
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                // Há uma nova versão disponível
+                                if (confirm('Nova versão disponível! Deseja atualizar?')) {
+                                    window.location.reload();
+                                }
+                            }
+                        });
+                    });
+                } catch (error) {
+                    console.log('Erro ao registrar Service Worker:', error);
+                }
+            });
+        }
+
+        // Botão de instalação PWA
+        let deferredPrompt;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+
+            // Mostra um botão de instalação
+            mostrarBotaoInstalar();
+        });
+
+        function mostrarBotaoInstalar() {
+            const btnInstalar = document.createElement('button');
+            btnInstalar.className = 'btn btn-secondary';
+            btnInstalar.innerHTML = '📱 Instalar App';
+            btnInstalar.style.position = 'fixed';
+            btnInstalar.style.bottom = '20px';
+            btnInstalar.style.right = '20px';
+            btnInstalar.style.zIndex = '1000';
+            btnInstalar.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+
+            btnInstalar.onclick = async () => {
+                if (!deferredPrompt) return;
+
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+
+                if (outcome === 'accepted') {
+                    console.log('PWA instalado');
+                }
+
+                deferredPrompt = null;
+                btnInstalar.remove();
+            };
+
+            document.body.appendChild(btnInstalar);
+        }
+
+        // Calcular ao carregar
+        calcular();
+    </script>
+</body>
+</html>

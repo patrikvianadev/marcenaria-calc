@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Gerador de Ícones PWA</title>
+</head>
+<body>
+    <h1>Gerador de Ícones para PWA</h1>
+    <p>Abra o console (F12) e os ícones serão baixados automaticamente.</p>
+    <canvas id="canvas192" width="192" height="192"></canvas>
+    <canvas id="canvas512" width="512" height="512"></canvas>
+
+    <script>
+        function gerarIcone(canvasId, tamanho) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+
+            // Background gradiente
+            const gradient = ctx.createLinearGradient(0, 0, tamanho, tamanho);
+            gradient.addColorStop(0, '#4CAF50');
+            gradient.addColorStop(1, '#2e7d32');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, tamanho, tamanho);
+
+            // Desenha um símbolo de régua/marcenaria
+            ctx.strokeStyle = '#ffffff';
+            ctx.fillStyle = '#ffffff';
+            ctx.lineWidth = tamanho * 0.04;
+
+            // Régua vertical
+            const x = tamanho * 0.35;
+            const y1 = tamanho * 0.2;
+            const y2 = tamanho * 0.8;
+            ctx.beginPath();
+            ctx.moveTo(x, y1);
+            ctx.lineTo(x, y2);
+            ctx.stroke();
+
+            // Marcações da régua
+            const marcacoes = 8;
+            for (let i = 0; i <= marcacoes; i++) {
+                const y = y1 + (y2 - y1) * (i / marcacoes);
+                const comprimento = i % 4 === 0 ? tamanho * 0.08 : tamanho * 0.05;
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + comprimento, y);
+                ctx.stroke();
+            }
+
+            // Parafuso (círculo)
+            const circuloX = tamanho * 0.65;
+            const circuloY = tamanho * 0.5;
+            const raio = tamanho * 0.08;
+            ctx.beginPath();
+            ctx.arc(circuloX, circuloY, raio, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // Cruz no parafuso
+            ctx.strokeStyle = '#2e7d32';
+            ctx.lineWidth = tamanho * 0.02;
+            ctx.beginPath();
+            ctx.moveTo(circuloX - raio * 0.5, circuloY);
+            ctx.lineTo(circuloX + raio * 0.5, circuloY);
+            ctx.moveTo(circuloX, circuloY - raio * 0.5);
+            ctx.lineTo(circuloX, circuloY + raio * 0.5);
+            ctx.stroke();
+
+            // Download
+            canvas.toBlob((blob) => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `icon-${tamanho}.png`;
+                a.click();
+                URL.revokeObjectURL(url);
+                console.log(`Ícone ${tamanho}x${tamanho} gerado!`);
+            });
+        }
+
+        // Gera os ícones automaticamente
+        setTimeout(() => {
+            gerarIcone('canvas192', 192);
+            setTimeout(() => {
+                gerarIcone('canvas512', 512);
+            }, 500);
+        }, 500);
+    </script>
+</body>
+</html>
