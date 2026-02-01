@@ -1225,6 +1225,63 @@ const OFFSET_PARAFUSO = 4;
 
 ---
 
+## 🔧 Guia Rápido de Git
+
+Se você nunca usou Git antes, aqui está o básico para começar a editar e salvar suas mudanças.
+
+### Configuração Inicial (apenas uma vez)
+
+```bash
+git config --global user.name "Seu Nome"
+git config --global user.email "seu@email.com"
+```
+
+### Fluxo de Trabalho Diário
+
+#### 1. Antes de começar a editar, baixe as últimas alterações:
+```bash
+git pull origin main
+```
+
+#### 2. Faça suas edições nos arquivos normalmente
+
+#### 3. Veja o que você alterou:
+```bash
+git status
+```
+
+#### 4. Adicione os arquivos modificados:
+```bash
+git add .
+```
+
+#### 5. Salve suas alterações com uma mensagem descritiva:
+```bash
+git commit -m "Descrição do que você fez"
+```
+
+#### 6. Envie para o GitHub:
+```bash
+git push origin main
+```
+
+### Comandos Úteis
+
+| Comando | O que faz |
+|---------|-----------|
+| `git status` | Mostra arquivos modificados |
+| `git diff` | Mostra as mudanças linha a linha |
+| `git log --oneline` | Lista os últimos commits |
+| `git checkout -- arquivo.html` | Desfaz alterações não salvas em um arquivo |
+
+### Dicas Importantes
+
+- **Sempre faça `git pull` antes de começar** para evitar conflitos
+- **Commits pequenos e frequentes** são melhores que um commit gigante
+- **Mensagens claras** ajudam a entender o histórico depois (ex: "Corrige cálculo do rodapé" em vez de "fix")
+
+---
+
 ## 📄 Licença
 
 Este projeto é de código aberto e está disponível sob a licença MIT.
